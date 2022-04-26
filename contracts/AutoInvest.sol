@@ -41,7 +41,8 @@ contract AutoInvest is IAutoInvest, Ownable{
         // 投入总额,要求必须是稳定币
         uint256 cost;
         // 投资人盈利部分的 1% 作为合约发布方的分成,定投定抛没有按规定执行的每次增加 0.1% 的分成比例
-        // serviceFee的初始值为10,定投定抛每违约1次,该值加1,分成=(盈利/1000)*serviceFee
+        // serviceFee的初始值为10,定投定抛违约该值增加,增加值=违约时长/最大买入或卖出时间间隔
+        // 分成=(盈利/1000)*serviceFee
         uint256 serviceFee; 
     }
 
@@ -105,10 +106,14 @@ contract AutoInvest is IAutoInvest, Ownable{
         require(minToBuy > 0,"initialize the minimum and maximum amount to buy first");
         require(stableCoinAmount >= minToBuy && stableCoinAmount <= maxToBuy,"the amount to buy exceeds the allowed range");
         require(block.timestamp >= (accountInfos[msg.sender].lastBuyTime + minBuyInterval),"not time to buy yet,be patience!");
-        //超过最长间隔,定投违约
-        if(block.timestamp > (accountInfos[msg.sender].lastBuyTime + maxBuyInterval)){
-            accountInfos[msg.sender].serviceFee += 1;
-        }  
+        
+        //超过最长间隔,定投违约,超过1个maxBuyInterval,serviceFee加1,以此类推
+        uint256 lastBuyTime = accountInfos[msg.sender].lastBuyTime;
+        if(lastBuyTime == 0){
+            accountInfos[msg.sender].serviceFee += (block.timestamp - buyStartTime) / maxBuyInterval;
+        }else if((block.timestamp - lastBuyTime) > maxBuyInterval){
+            accountInfos[msg.sender].serviceFee += (block.timestamp - lastBuyTime) / maxBuyInterval;
+        }
 
         accountInfos[msg.sender].lastBuyTime = block.timestamp;
         accountInfos[msg.sender].cost += stableCoinAmount;
@@ -148,9 +153,12 @@ contract AutoInvest is IAutoInvest, Ownable{
                 wethAmountToSell <= accountInfos[msg.sender].sellETHMax,"the ETH sell amount exceeds the allowed range");
         }
        
-        //超过最长间隔,定抛违约
-        if(block.timestamp > (lastSellTime + maxSellInterval)){
-            accountInfos[msg.sender].serviceFee += 1;
+        //超过最长间隔,定抛违约,超过1个maxSellInterval,serviceFee加1,以此类推
+        if(lastSellTime == 0){
+            uint256 sellStartTime = buyEndTime + waitingPeriod;
+            accountInfos[msg.sender].serviceFee += (block.timestamp - sellStartTime) / maxSellInterval;
+        }else if(block.timestamp - lastSellTime > maxSellInterval){
+            accountInfos[msg.sender].serviceFee += (block.timestamp - lastSellTime) / maxSellInterval;
         }
 
         //更新投资人账户信息
