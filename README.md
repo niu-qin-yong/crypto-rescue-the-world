@@ -35,4 +35,7 @@
 
 该合约算是对Web3时代新投资方式的一个探索吧.
 
-(另外,该项目的名称 crypto-rescue-the-world 源自我投资理财路上的启蒙老师,永远18岁的“ETF拯救世界”^ _ ^)
+(另外,该项目的名称 **crypto-rescue-the-world** 源自我投资理财路上的启蒙老师,永远18岁的**ETF拯救世界**^ _ ^)
+
+# 代码解析
+[crypto-rescue-the-world代码解析](https://zhuanlan.zhihu.com/p/499891602)
